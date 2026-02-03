@@ -3,9 +3,7 @@
 
 #include <stdint.h>
 #include <cstring>
-#include <pico/rand.h>
-
-#include "tusb.h"
+#include <random>
 
 namespace PS3 
 {
@@ -75,7 +73,7 @@ namespace PS3
 
 	namespace Buttons2
 	{
-		static constexpr uint8_t PS = 0x01;
+		static constexpr uint8_t SYS = 0x01;
 		static constexpr uint8_t TP = 0x02;
 	};
 
@@ -190,6 +188,7 @@ namespace PS3
 		0xFF, 0xFF,
 		0x00, 0x20, 0x40, 0xCE, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00
 	};
 
 	struct BTInfo
@@ -201,15 +200,18 @@ namespace PS3
 
 		BTInfo()
 		{
-			std::memset(this, 0, sizeof(BTInfo));
 			std::memcpy(device_address, DEFAULT_BT_INFO_HEADER, sizeof(DEFAULT_BT_INFO_HEADER));
-			for (uint8_t addr = 0; addr < 3; addr++) 
+
+            std::mt19937 gen(12345);
+            std::uniform_int_distribution<uint8_t> dist(0, 0xFF);
+
+			for (uint8_t i = 4; i < sizeof(device_address); i++) 
 			{
-				device_address[4 + addr] = static_cast<uint8_t>(get_rand_32() % 0xff);
+				device_address[i] = dist(gen);
 			}
-			for (uint8_t addr = 0; addr < 6; addr++) 
+			for (uint8_t i = 1; i < sizeof(host_address); i++) 
 			{
-				host_address[1 + addr] = static_cast<uint8_t>(get_rand_32() % 0xff);
+				host_address[i] = dist(gen);
 			}
 		}
 	};

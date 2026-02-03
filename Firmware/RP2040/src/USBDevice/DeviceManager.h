@@ -4,23 +4,21 @@
 #include <cstdint>
 #include <memory>
 
-#include "Gamepad.h"
+#include "USBDevice/DeviceDriver/DeviceDriverTypes.h"
 #include "USBDevice/DeviceDriver/DeviceDriver.h"
 
-class DeviceManager 
-{
+class DeviceManager {
 public:
 	DeviceManager(DeviceManager const&) = delete;
 	void operator=(DeviceManager const&)  = delete;
 
-    static DeviceManager& get_instance() 
-    {
+    static DeviceManager& get_instance() {
 		static DeviceManager instance;
 		return instance;
 	}
 
 	//Must be called before any other method
-	void initialize_driver(DeviceDriver::Type driver_type, Gamepad(&gamepads)[MAX_GAMEPADS]);
+	void initialize_driver(DeviceDriverType driver_type, Gamepad(&gamepads)[MAX_GAMEPADS]);
 	
 	DeviceDriver* get_driver() { return device_driver_.get(); }
 	

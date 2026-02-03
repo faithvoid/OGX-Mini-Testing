@@ -10,9 +10,10 @@
 #include "sdkconfig.h"
 #include "Bluepad32/Bluepad32.h"
 #include "Board/board_api.h"
+#include "Board/ogxm_log.h"
 
 #ifndef CONFIG_BLUEPAD32_PLATFORM_CUSTOM
-#error "Pico W must use BLUEPAD32_PLATFORM_CUSTOM"
+    #error "Pico W must use BLUEPAD32_PLATFORM_CUSTOM"
 #endif
 
 static_assert((CONFIG_BLUEPAD32_MAX_DEVICES == MAX_GAMEPADS), "Mismatch between BP32 and Gamepad max devices");
@@ -22,8 +23,7 @@ namespace bluepad32 {
 static constexpr uint32_t FEEDBACK_TIME_MS = 250;
 static constexpr uint32_t LED_CHECK_TIME_MS = 500;
 
-struct BTDevice
-{
+struct BTDevice {
     bool connected{false};
     Gamepad* gamepad{nullptr};
 };
@@ -122,77 +122,61 @@ static void check_led_cb(btstack_timer_source *ts)
 
 //BT Driver
 
-static void init(int argc, const char** arg_V)
-{
-
+static void init(int argc, const char** arg_V) {
 }
 
-static void init_complete_cb(void) 
-{
+static void init_complete_cb(void) {
     uni_bt_enable_new_connections_unsafe(true);
-
-    uni_bt_del_keys_unsafe();
-
+    // uni_bt_del_keys_unsafe();
     uni_property_dump_all();
 }
 
-static uni_error_t device_discovered_cb(bd_addr_t addr, const char* name, uint16_t cod, uint8_t rssi) 
-{
-    if (!((cod & UNI_BT_COD_MINOR_MASK) & UNI_BT_COD_MINOR_GAMEPAD))
-    {
+static uni_error_t device_discovered_cb(bd_addr_t addr, const char* name, uint16_t cod, uint8_t rssi) {
+    if (!((cod & UNI_BT_COD_MINOR_MASK) & UNI_BT_COD_MINOR_GAMEPAD)) {
         return UNI_ERROR_IGNORE_DEVICE;
     }
     return UNI_ERROR_SUCCESS;
 }
 
-static void device_connected_cb(uni_hid_device_t* device) 
-{
-
+static void device_connected_cb(uni_hid_device_t* device) {
 }
 
-static void device_disconnected_cb(uni_hid_device_t* device) 
-{
+static void device_disconnected_cb(uni_hid_device_t* device) {
     int idx = uni_hid_device_get_idx_for_instance(device);
-    if (idx >= MAX_GAMEPADS || idx < 0)
-    {
+    if (idx >= MAX_GAMEPADS || idx < 0) {
         return;
     }
 
     bt_devices_[idx].connected = false;
+    bt_devices_[idx].gamepad->reset_pad_in();
 
-    if (!led_timer_set_)
-    {
+    if (!led_timer_set_ && !any_connected()) {
         led_timer_set_ = true;
         led_timer_.process = check_led_cb;
         led_timer_.context = nullptr;
         btstack_run_loop_set_timer(&led_timer_, LED_CHECK_TIME_MS);
         btstack_run_loop_add_timer(&led_timer_);
     }
-    if (feedback_timer_set_ && !any_connected())
-    {
+    if (feedback_timer_set_ && !any_connected()) {
         feedback_timer_set_ = false;
         btstack_run_loop_remove_timer(&feedback_timer_);
     }
 }
 
-static uni_error_t device_ready_cb(uni_hid_device_t* device) 
-{    
+static uni_error_t device_ready_cb(uni_hid_device_t* device) {    
     int idx = uni_hid_device_get_idx_for_instance(device);
-    if (idx >= MAX_GAMEPADS || idx < 0)
-    {
+    if (idx >= MAX_GAMEPADS || idx < 0) {
         return UNI_ERROR_SUCCESS;
     }
 
     bt_devices_[idx].connected = true;
 
-    if (led_timer_set_)
-    {
+    if (led_timer_set_) {
         led_timer_set_ = false;
         btstack_run_loop_remove_timer(&led_timer_);
         board_api::set_led(true);
     }
-    if (!feedback_timer_set_)
-    {
+    if (!feedback_timer_set_) {
         feedback_timer_set_ = true;
         feedback_timer_.process = send_feedback_cb;
         feedback_timer_.context = nullptr;
@@ -202,17 +186,14 @@ static uni_error_t device_ready_cb(uni_hid_device_t* device)
     return UNI_ERROR_SUCCESS;
 }
 
-static void oob_event_cb(uni_platform_oob_event_t event, void* data) 
-{
+static void oob_event_cb(uni_platform_oob_event_t event, void* data) {
 	return;
 }
 
-static void controller_data_cb(uni_hid_device_t* device, uni_controller_t* controller) 
-{
+static void controller_data_cb(uni_hid_device_t* device, uni_controller_t* controller) {
     static uni_gamepad_t prev_uni_gp[MAX_GAMEPADS] = {};
 
-    if (controller->klass != UNI_CONTROLLER_CLASS_GAMEPAD)
-    {
+    if (controller->klass != UNI_CONTROLLER_CLASS_GAMEPAD){
         return;
     }
 
@@ -264,13 +245,11 @@ static void controller_data_cb(uni_hid_device_t* device, uni_controller_t* contr
     if (uni_gp->misc_buttons & MISC_BUTTON_START)   gp_in.buttons |= gamepad->MAP_BUTTON_START;
     if (uni_gp->misc_buttons & MISC_BUTTON_SYSTEM)  gp_in.buttons |= gamepad->MAP_BUTTON_SYS;
 
-    gp_in.trigger_l = Scale::uint10_to_uint8(uni_gp->brake);
-    gp_in.trigger_r = Scale::uint10_to_uint8(uni_gp->throttle);
-
-    gp_in.joystick_lx = Scale::int10_to_int16(uni_gp->axis_x);
-    gp_in.joystick_ly = Scale::int10_to_int16(uni_gp->axis_y);
-    gp_in.joystick_rx = Scale::int10_to_int16(uni_gp->axis_rx);
-    gp_in.joystick_ry = Scale::int10_to_int16(uni_gp->axis_ry);
+    gp_in.trigger_l = gamepad->scale_trigger_l<10>(static_cast<uint16_t>(uni_gp->brake));
+    gp_in.trigger_r = gamepad->scale_trigger_r<10>(static_cast<uint16_t>(uni_gp->throttle));
+    
+    std::tie(gp_in.joystick_lx, gp_in.joystick_ly) = gamepad->scale_joystick_l<10>(uni_gp->axis_x, uni_gp->axis_y);
+    std::tie(gp_in.joystick_rx, gp_in.joystick_ry) = gamepad->scale_joystick_r<10>(uni_gp->axis_rx, uni_gp->axis_ry);
 
     gamepad->set_pad_in(gp_in);
 }
@@ -300,7 +279,7 @@ uni_platform* get_driver()
 
 //Public API
 
-void run_task(Gamepad (&gamepads)[MAX_GAMEPADS])
+void run_task(Gamepad(&gamepads)[MAX_GAMEPADS])
 {
     for (uint8_t i = 0; i < MAX_GAMEPADS; ++i)
     {

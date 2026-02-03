@@ -1,18 +1,13 @@
-#ifndef _OGX_MINI_H_
-#define _OGX_MINI_H_
+#pragma once
 
 #include <cstdint>
 
-#include "UserSettings/UserSettings.h"
+#include "USBHost/HostDriver/HostDriverTypes.h"
 
-namespace OGXMini
-{
-    static constexpr int32_t FEEDBACK_DELAY_MS = 150;
-    static constexpr int32_t TUD_CHECK_DELAY_MS = 500;
-
-    void run_program();
-    void update_tud_status(bool host_mounted);
-
+namespace OGXMini {
+    void initialize();
+    void run();
+    void host_mounted(bool mounted, HostDriverType host_type);
+    void host_mounted(bool mounted);
+    void wireless_connected(bool connected, uint8_t idx);
 } // namespace OGXMini
-
-#endif // _OGX_MINI_H_

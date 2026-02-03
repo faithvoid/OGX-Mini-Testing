@@ -1,6 +1,6 @@
 #
 # Automatically generated file. DO NOT EDIT.
-# Espressif IoT Development Framework (ESP-IDF)  Project Configuration
+# Espressif IoT Development Framework (ESP-IDF) 5.1.5 Project Configuration
 #
 CONFIG_SOC_BROWNOUT_RESET_SUPPORTED="Not determined"
 CONFIG_SOC_TWAI_BRP_DIV_SUPPORTED="Not determined"
@@ -1961,7 +1961,12 @@ CONFIG_WIFI_PROV_STA_ALL_CHANNEL_SCAN=y
 #
 # OGXMini Options
 #
-CONFIG_RESET_PIN=15
+CONFIG_I2C_RING_BUFFER_SIZE=6
+CONFIG_I2C_PORT=0
+CONFIG_I2C_SDA_PIN=21
+CONFIG_I2C_SCL_PIN=22
+CONFIG_I2C_BAUDRATE=1000000
+CONFIG_RESET_PIN=9
 # CONFIG_MULTI_SLAVE_MODE is not set
 CONFIG_ENABLE_LED_1=y
 CONFIG_LED_PIN_1=15

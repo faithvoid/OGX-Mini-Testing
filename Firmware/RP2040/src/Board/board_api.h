@@ -4,15 +4,17 @@
 #include <cstdint>
 #include <string>
 
-namespace board_api
-{
+namespace board_api {
     void init_board();
-    void set_led(bool state);
+    void init_bluetooth();
     void reboot();
+    void set_led(bool state);
+    uint32_t ms_since_boot();
 
-    bool uart_bridge_mode();
-    void reset_esp32();
-    void enter_esp32_prog_mode();
+    namespace usb {
+        bool host_connected();
+        void disconnect_all();
+    }
 }
 
 #endif // _OGXM_BOARD_API_H_

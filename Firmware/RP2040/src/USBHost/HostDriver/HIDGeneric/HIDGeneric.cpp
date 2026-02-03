@@ -1,4 +1,8 @@
+#include <cstring>
 #include <memory>
+
+#include "host/usbh.h"
+#include "class/hid/hid_host.h"
 
 #include "USBHost/HIDParser/HIDReportDescriptor.h"
 #include "USBHost/HostDriver/HIDGeneric/HIDGeneric.h"
@@ -64,10 +68,8 @@ void HIDHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
             break;
     }
 
-    gp_in.joystick_lx = hid_joystick_data_.X;
-    gp_in.joystick_ly = hid_joystick_data_.Y;
-    gp_in.joystick_rx = hid_joystick_data_.Z;
-    gp_in.joystick_ry = hid_joystick_data_.Rz;
+    std::tie(gp_in.joystick_lx, gp_in.joystick_ly) = gamepad.scale_joystick_l(hid_joystick_data_.X, hid_joystick_data_.Y);
+    std::tie(gp_in.joystick_rx, gp_in.joystick_ry) = gamepad.scale_joystick_r(hid_joystick_data_.Z, hid_joystick_data_.Rz);
 
     if (hid_joystick_data_.buttons[1])  gp_in.buttons |= gamepad.MAP_BUTTON_X;
     if (hid_joystick_data_.buttons[2])  gp_in.buttons |= gamepad.MAP_BUTTON_A;
@@ -75,8 +77,8 @@ void HIDHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t instance
     if (hid_joystick_data_.buttons[4])  gp_in.buttons |= gamepad.MAP_BUTTON_Y;
     if (hid_joystick_data_.buttons[5])  gp_in.buttons |= gamepad.MAP_BUTTON_LB;
     if (hid_joystick_data_.buttons[6])  gp_in.buttons |= gamepad.MAP_BUTTON_RB;
-    if (hid_joystick_data_.buttons[7])  gp_in.trigger_l = UINT_8::MAX;
-    if (hid_joystick_data_.buttons[8])  gp_in.trigger_r = UINT_8::MAX;
+    if (hid_joystick_data_.buttons[7])  gp_in.trigger_l = Range::MAX<uint8_t>;
+    if (hid_joystick_data_.buttons[8])  gp_in.trigger_r = Range::MAX<uint8_t>;
     if (hid_joystick_data_.buttons[9])  gp_in.buttons |= gamepad.MAP_BUTTON_BACK;
     if (hid_joystick_data_.buttons[10]) gp_in.buttons |= gamepad.MAP_BUTTON_START;
     if (hid_joystick_data_.buttons[11]) gp_in.buttons |= gamepad.MAP_BUTTON_L3;

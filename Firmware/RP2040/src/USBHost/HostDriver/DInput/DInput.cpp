@@ -62,7 +62,7 @@ void DInputHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t insta
     if (in_report->buttons[1] & DInput::Buttons1::R3)       gp_in.buttons |= gamepad.MAP_BUTTON_R3; 
     if (in_report->buttons[1] & DInput::Buttons1::SELECT)   gp_in.buttons |= gamepad.MAP_BUTTON_BACK;
     if (in_report->buttons[1] & DInput::Buttons1::START)    gp_in.buttons |= gamepad.MAP_BUTTON_START;
-    if (in_report->buttons[1] & DInput::Buttons1::PS)       gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
+    if (in_report->buttons[1] & DInput::Buttons1::SYS)      gp_in.buttons |= gamepad.MAP_BUTTON_SYS;
     if (in_report->buttons[1] & DInput::Buttons1::TP)       gp_in.buttons |= gamepad.MAP_BUTTON_MISC;
 
     if (gamepad.analog_enabled())
@@ -81,25 +81,23 @@ void DInputHost::process_report(Gamepad& gamepad, uint8_t address, uint8_t insta
 
     if (in_report->l2_axis > 0)
     {
-        gp_in.trigger_l = in_report->l2_axis;
+        gp_in.trigger_l = gamepad.scale_trigger_l(in_report->l2_axis);
     }
     else
     {
-        gp_in.trigger_l = (in_report->buttons[0] & DInput::Buttons0::L2) ? UINT_8::MAX : UINT_8::MIN;
+        gp_in.trigger_l = (in_report->buttons[0] & DInput::Buttons0::L2) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
     }
     if (in_report->r2_axis > 0)
     {
-        gp_in.trigger_r = in_report->r2_axis;
+        gp_in.trigger_r = gamepad.scale_trigger_r(in_report->r2_axis);
     }
     else
     {
-        gp_in.trigger_r = (in_report->buttons[0] & DInput::Buttons0::R2) ? UINT_8::MAX : UINT_8::MIN;
+        gp_in.trigger_r = (in_report->buttons[0] & DInput::Buttons0::R2) ? Range::MAX<uint8_t> : Range::MIN<uint8_t>;
     }
 
-    gp_in.joystick_lx = Scale::uint8_to_int16(in_report->joystick_lx);
-    gp_in.joystick_ly = Scale::uint8_to_int16(in_report->joystick_ly);
-    gp_in.joystick_rx = Scale::uint8_to_int16(in_report->joystick_rx);
-    gp_in.joystick_ry = Scale::uint8_to_int16(in_report->joystick_ry);
+    std::tie(gp_in.joystick_lx, gp_in.joystick_ly) = gamepad.scale_joystick_l(in_report->joystick_lx, in_report->joystick_ly);
+    std::tie(gp_in.joystick_rx, gp_in.joystick_ry) = gamepad.scale_joystick_r(in_report->joystick_rx, in_report->joystick_ry);
 
     gamepad.set_pad_in(gp_in);
 
