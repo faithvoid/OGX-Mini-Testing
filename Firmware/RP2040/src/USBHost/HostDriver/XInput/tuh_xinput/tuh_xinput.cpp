@@ -312,10 +312,6 @@ static bool xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, uin
 
                         TU_LOG1("Xbox 360 wireless controller connected\n");
 
-                        //I think some 3rd party adapters need this:
-                        std_sleep_ms(1000);
-                        send_report(dev_addr, instance, Xbox360W::RUMBLE_ENABLE, sizeof(Xbox360W::RUMBLE_ENABLE));
-
                         if (xbox360w_connect_cb)
                         {
                             xbox360w_connect_cb(dev_addr, instance);
